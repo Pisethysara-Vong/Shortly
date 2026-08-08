@@ -43,10 +43,10 @@ function processQueue(error: unknown, token: string | null) {
 // refresh from any of these would either loop or make no sense
 // (there's no session yet to refresh).
 const AUTH_BYPASS_PATHS = [
-  '/account/auth/refresh',
-  '/account/auth/login',
-  '/account/auth/register',
-  '/account/auth/google',
+  '/account/refresh',
+  '/account/login',
+  '/account/register',
+  '/account/google',
 ]
 
 api.interceptors.response.use(
@@ -75,7 +75,7 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const { data } = await api.post('/account/auth/refresh')
+        const { data } = await api.post('/account/refresh')
         const newToken: string = data.accessToken
         tokenStore.set(newToken)
         processQueue(null, newToken)
@@ -85,15 +85,7 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
-
-        // Grab the role before we wipe the store, so we can send the
-        // person back to the right login screen.
-        const role = useAuthStore.getState().user?.role
         useAuthStore.getState().clear()
-
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login'
-        }
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

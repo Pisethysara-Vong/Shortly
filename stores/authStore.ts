@@ -24,7 +24,7 @@ export const useAuthStore = create<AuthStore>()(
       clear: () => set({ user: null, accessToken: null }),
     }),
     {
-      name: 'admin-auth',
+      name: 'shortly-auth',
       partialize: (state) => ({ user: state.user }),
       onRehydrateStorage: () => (state) => {
         // Called once localStorage data has been loaded into the store
