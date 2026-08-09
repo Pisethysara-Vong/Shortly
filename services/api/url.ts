@@ -21,7 +21,7 @@ export const urlApi = {
         getAll: () =>
             api.get('/url/admin/all'),
 
-        getUserUrls: (targetUserId: string) =>
-            api.get(`/url/admin/user/${targetUserId}`),
+        getUserUrls: (targetUserEmail: string) =>
+            api.get(`/url/admin/user/${targetUserEmail}`),
     },
 }

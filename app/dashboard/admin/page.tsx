@@ -1,7 +1,7 @@
 // app/dashboard/admin/page.tsx
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { urlApi } from "@/services/api/url"
@@ -23,7 +23,8 @@ import {
   RefreshCw,
   Clock,
   MousePointerClick,
-  AlertCircle
+  AlertCircle,
+  X
 } from "lucide-react"
 
 export default function AdminDashboardPage() {
@@ -42,8 +43,9 @@ export default function AdminDashboardPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const [targetUserId, setTargetUserId] = useState("")
+  const [activeFilterEmail, setActiveFilterEmail] = useState("")
   const [filterMode, setFilterMode] = useState<"all" | "user">("all")
+  const emailInputRef = useRef<HTMLInputElement>(null)
 
   const getShortUrlString = (shortCode: string) => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4444/api"
@@ -54,8 +56,8 @@ export default function AdminDashboardPage() {
     setLoadingUrls(true)
     setError(null)
     try {
-      if (filterMode === "user" && targetUserId.trim()) {
-        const { data } = await urlApi.admin.getUserUrls(targetUserId.trim())
+      if (filterMode === "user" && activeFilterEmail) {
+        const { data } = await urlApi.admin.getUserUrls(activeFilterEmail)
         setUrls(Array.isArray(data) ? data : [])
       } else {
         const { data } = await urlApi.admin.getAll()
@@ -66,13 +68,35 @@ export default function AdminDashboardPage() {
     } finally {
       setLoadingUrls(false)
     }
-  }, [filterMode, targetUserId])
+  }, [filterMode, activeFilterEmail])
 
   useEffect(() => {
     if (user?.role === "ADMIN") {
       fetchAdminUrls()
     }
-  }, [user, fetchAdminUrls])
+  }, [user?.role, fetchAdminUrls])
+
+  const handleApplyFilter = () => {
+    const value = emailInputRef.current?.value.trim() ?? ""
+    if (!value) return
+    setFilterMode("user")
+    setActiveFilterEmail(value)
+  }
+
+  const handleClearFilter = () => {
+    if (emailInputRef.current) {
+      emailInputRef.current.value = ""
+    }
+    setActiveFilterEmail("")
+    setFilterMode("all")
+  }
+
+  const handleFilterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleApplyFilter()
+    }
+  }
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text)
@@ -119,7 +143,7 @@ export default function AdminDashboardPage() {
           <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           <AlertTitle className="font-semibold">Admin Mode — Read Only Access</AlertTitle>
           <AlertDescription className="text-xs sm:text-sm text-amber-800 dark:text-amber-400">
-            You are logged in as an Administrator. You can view all URLs across the platform and filter by User ID, but URL creation and deletion operations are disabled for admin roles.
+            You are logged in as an Administrator. You can view all URLs across the platform and filter by user email, but URL creation and deletion operations are disabled for admin roles.
           </AlertDescription>
         </Alert>
 
@@ -142,37 +166,34 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-3 items-end">
-              <div className="w-full sm:w-80 space-y-1.5">
-                <Label htmlFor="target-user-id">Filter by Target User ID</Label>
+              <div className="w-full sm:w-80 space-y-2.5">
+                <Label htmlFor="target-user-email">Filter by Target User Email</Label>
                 <Input
-                  id="target-user-id"
-                  type="text"
-                  placeholder="Enter User UUID..."
-                  value={targetUserId}
-                  onChange={(e) => setTargetUserId(e.target.value)}
+                  id="target-user-email"
+                  type="email"
+                  placeholder="Enter user email..."
+                  ref={emailInputRef}
+                  onKeyDown={handleFilterKeyDown}
                 />
               </div>
               <div className="flex gap-2">
                 <Button
-                  variant={filterMode === "user" ? "default" : "outline"}
-                  onClick={() => {
-                    setFilterMode("user")
-                    fetchAdminUrls()
-                  }}
-                  disabled={!targetUserId.trim()}
+                  variant="default"
+                  onClick={handleApplyFilter}
+                  className="cursor-pointer"
                 >
                   Filter User
                 </Button>
-                <Button
-                  variant={filterMode === "all" ? "default" : "outline"}
-                  onClick={() => {
-                    setFilterMode("all")
-                    setTargetUserId("")
-                    fetchAdminUrls()
-                  }}
-                >
-                  View All URLs
-                </Button>
+                {filterMode === "user" && (
+                  <Button
+                    variant="outline"
+                    onClick={handleClearFilter}
+                    className="gap-1.5 cursor-pointer"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Clear Filter
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
