@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Link2, AlertCircle, UserPlus } from "lucide-react"
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -41,16 +42,26 @@ export default function RegisterPage() {
 
     try {
       const { data } = await accountApi.register(email, password, username)
-      if (data.accessToken && data.user) {
-        setAccessToken(data.accessToken)
-        setUser(data.user)
-        router.push("/dashboard")
-      } else {
-        const loginRes = await accountApi.login(email, password)
-        setAccessToken(loginRes.data.accessToken)
-        setUser(loginRes.data.user)
-        router.push("/dashboard")
-      }
+      setAccessToken(data.accessToken)
+      setUser(data.user)
+      router.push("/dashboard")
+    } catch (err) {
+      setError(parseErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) return
+    setError(null)
+    setLoading(true)
+
+    try {
+      const { data } = await accountApi.googleAuth(credentialResponse.credential)
+      setAccessToken(data.accessToken)
+      setUser(data.user)
+      router.push("/dashboard")
     } catch (err) {
       setError(parseErrorMessage(err))
     } finally {
@@ -131,6 +142,23 @@ export default function RegisterPage() {
                 {loading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
+                  Or Google
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError("Google sign-in failed. Please try again.")}
+              />
+            </div>
           </CardContent>
           <CardFooter className="flex justify-center border-t border-zinc-100 dark:border-zinc-900 pt-4">
             <p className="text-sm text-zinc-500 dark:text-zinc-400">

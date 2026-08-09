@@ -1,7 +1,7 @@
 // app/dashboard/user/page.tsx
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { urlApi } from "@/services/api/url"
@@ -15,6 +15,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Link2,
   Copy,
   Check,
@@ -24,7 +34,9 @@ import {
   Clock,
   MousePointerClick,
   AlertCircle,
-  Plus
+  Plus,
+  Calendar as CalendarIcon,
+  CheckCircle2,
 } from "lucide-react"
 
 export default function UserDashboardPage() {
@@ -48,10 +60,25 @@ export default function UserDashboardPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [urlToDelete, setUrlToDelete] = useState<UrlResponse | null>(null)
 
   const getShortUrlString = (shortCode: string) => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4444/api"
-    return `${apiBase}/redirect/${shortCode}`
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:4444"
+    return `${baseUrl}/${shortCode}`
+  }
+
+  // inside the component, alongside your other state
+  const expiresAtRef = useRef<HTMLInputElement>(null)
+
+  const openExpiryPicker = () => {
+    const el = expiresAtRef.current
+    if (!el) return
+
+    try {
+      el.showPicker()
+    } catch {
+      el.focus()
+    }
   }
 
   const fetchMyUrls = useCallback(async () => {
@@ -107,6 +134,7 @@ export default function UserDashboardPage() {
       setError("Failed to delete URL.")
     } finally {
       setDeletingId(null)
+      setUrlToDelete(null)
     }
   }
 
@@ -186,12 +214,17 @@ export default function UserDashboardPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="expires-at">Expiration (Optional)</Label>
-                  <Input
-                    id="expires-at"
-                    type="datetime-local"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                  />
+                  <div className="relative cursor-pointer" onClick={openExpiryPicker}>
+                    <Input
+                      id="expires-at"
+                      type="datetime-local"
+                      ref={expiresAtRef}
+                      value={expiresAt}
+                      onChange={(e) => setExpiresAt(e.target.value)}
+                      className="pr-9 cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0"
+                    />
+                    <CalendarIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                  </div>
                 </div>
               </div>
 
@@ -202,41 +235,44 @@ export default function UserDashboardPage() {
             </form>
 
             {createdUrl && (
-              <div className="mt-4 rounded-md border border-zinc-200 bg-zinc-100/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="space-y-1 min-w-0">
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      Short URL Generated:
-                    </p>
-                    <a
-                      href={getShortUrlString(createdUrl.shortCode)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm font-medium text-zinc-900 underline hover:text-zinc-700 dark:text-zinc-100 truncate block"
+              <Alert variant="success" className="mt-4">
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                      <p className="text-xs font-medium opacity-80">
+                        Short URL Generated:
+                      </p>
+                      <a
+                        href={getShortUrlString(createdUrl.shortCode)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-semibold underline hover:opacity-80 truncate block"
+                      >
+                        {getShortUrlString(createdUrl.shortCode)}
+                      </a>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCopy(getShortUrlString(createdUrl.shortCode), "new-url")}
+                      className="gap-1.5 shrink-0"
                     >
-                      {getShortUrlString(createdUrl.shortCode)}
-                    </a>
+                      {copiedId === "new-url" ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-green-600" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" />
+                          <span>Copy Link</span>
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCopy(getShortUrlString(createdUrl.shortCode), "new-url")}
-                    className="gap-1.5 shrink-0"
-                  >
-                    {copiedId === "new-url" ? (
-                      <>
-                        <Check className="h-3.5 w-3.5 text-green-600" />
-                        <span>Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3.5 w-3.5" />
-                        <span>Copy Link</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
+                </AlertDescription>
+              </Alert>
             )}
           </CardContent>
         </Card>
@@ -362,7 +398,7 @@ export default function UserDashboardPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-zinc-500 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
-                            onClick={() => handleDeleteUrl(url.id)}
+                            onClick={() => setUrlToDelete(url)}
                             disabled={deletingId === url.id}
                             title="Delete URL"
                           >
@@ -378,6 +414,36 @@ export default function UserDashboardPage() {
           </CardContent>
         </Card>
       </main>
+      <AlertDialog open={!!urlToDelete} onOpenChange={(open) => !open && setUrlToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this short URL?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {urlToDelete && (
+                <>
+                  This will permanently delete{" "}
+                  <span className="font-mono font-semibold text-zinc-900 dark:text-zinc-100">
+                    {urlToDelete.shortCode}
+                  </span>{" "}
+                  and its click history. This action cannot be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingId === urlToDelete?.id}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => urlToDelete && handleDeleteUrl(urlToDelete.id)}
+              disabled={deletingId === urlToDelete?.id}
+              className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+            >
+              {deletingId === urlToDelete?.id ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

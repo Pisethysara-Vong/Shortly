@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Link2, AlertCircle, LogIn } from "lucide-react"
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,7 +20,6 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [googleIdToken, setGoogleIdToken] = useState("")
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -41,15 +41,9 @@ export default function LoginPage() {
 
     try {
       const { data } = await accountApi.login(email, password)
-      if (data.accessToken && data.user) {
-        setAccessToken(data.accessToken)
-        setUser(data.user)
-        router.push("/dashboard")
-      } else {
-        const meRes = await accountApi.me()
-        setUser(meRes.data)
-        router.push("/dashboard")
-      }
+      setAccessToken(data.accessToken)
+      setUser(data.user)
+      router.push("/dashboard")
     } catch (err) {
       setError(parseErrorMessage(err))
     } finally {
@@ -57,19 +51,16 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogleAuth = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!googleIdToken.trim()) return
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) return
     setError(null)
     setLoading(true)
 
     try {
-      const { data } = await accountApi.googleAuth(googleIdToken.trim())
-      if (data.accessToken && data.user) {
-        setAccessToken(data.accessToken)
-        setUser(data.user)
-        router.push("/dashboard")
-      }
+      const { data } = await accountApi.googleAuth(credentialResponse.credential)
+      setAccessToken(data.accessToken)
+      setUser(data.user)
+      router.push("/dashboard")
     } catch (err) {
       setError(parseErrorMessage(err))
     } finally {
@@ -146,28 +137,17 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-white px-2 text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
-                  Or Google OAuth
+                  Or Google
                 </span>
               </div>
             </div>
 
-            <form onSubmit={handleGoogleAuth} className="space-y-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="google-token">Google ID Token</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="google-token"
-                    type="text"
-                    placeholder="Paste Google ID Token..."
-                    value={googleIdToken}
-                    onChange={(e) => setGoogleIdToken(e.target.value)}
-                  />
-                  <Button type="submit" variant="outline" disabled={loading || !googleIdToken.trim()}>
-                    Auth
-                  </Button>
-                </div>
-              </div>
-            </form>
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError("Google sign-in failed. Please try again.")}
+              />
+            </div>
           </CardContent>
           <CardFooter className="flex justify-center border-t border-zinc-100 dark:border-zinc-900 pt-4">
             <p className="text-sm text-zinc-500 dark:text-zinc-400">

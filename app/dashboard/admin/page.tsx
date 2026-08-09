@@ -188,7 +188,7 @@ export default function AdminDashboardPage() {
                 System-wide database of all shortened URLs.
               </CardDescription>
             </div>
-            <Button variant="ghost" size="sm" onClick={fetchAdminUrls} disabled={loadingUrls} className="gap-1.5">
+            <Button variant="ghost" size="sm" onClick={fetchAdminUrls} disabled={loadingUrls} className="gap-1.5 cursor-pointer">
               <RefreshCw className={`h-3.5 w-3.5 ${loadingUrls ? "animate-spin" : ""}`} />
               <span>Refresh</span>
             </Button>
