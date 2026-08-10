@@ -3,6 +3,13 @@ export function getShortUrlString(shortCode: string): string {
   return `${baseUrl}/${shortCode}`
 }
 
+// Admin views link through the API's redirect route directly, distinct
+// from the public-facing short link format above.
+export function getAdminShortUrlString(shortCode: string): string {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4444/api"
+  return `${apiBase}/redirect/${shortCode}`
+}
+
 export function formatDateTime(date: string | Date): string {
   return new Date(date).toLocaleDateString(undefined, {
     month: "short",
