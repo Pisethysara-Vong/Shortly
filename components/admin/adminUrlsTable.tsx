@@ -47,7 +47,7 @@ export function AdminUrlsTable({ urls }: AdminUrlsTableProps) {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7"
+                                        className="h-7 w-7 cursor-pointer"
                                         onClick={() => handleCopy(fullShortUrl, url.id)}
                                         title="Copy Short URL"
                                     >
