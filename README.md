@@ -1,5 +1,4 @@
 # Shortly: A Full-Stack URL Shortener
-[![Ask DeepWiki](https://devin.ai/assets/askdeepwiki.png)](https://deepwiki.com/Pisethysara-Vong/Shortly)
 
 Shortly is a modern, full-stack URL shortener application built with Next.js and TypeScript. It allows users to create, manage, and track their short links through a clean and intuitive interface. The application supports both standard user accounts and a dedicated admin role for system-wide monitoring.
 
